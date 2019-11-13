@@ -149,11 +149,21 @@ function createProject {
 
   mkdir -p "$HOME/.todos_haj/todos"
 
-  (cd "$TODOS_PATH" && touch "$1".txt)
+  (cd "$TODOS_PATH" && touch "$1".txt && touch "$1_settings".txt && echo "$2" >> "$2_settings".txt)
+}
+
+function deleteProject {
+  if [[ -z "$1" ]]; then
+    missingParameters
+  fi
+
+  (cd "$TODOS_PATH" && find . -type f -name "*$1*" -delete)
+  listProjects
 }
 
 function displayInstructions {
   echo "☆ Create project: todo create <projectname>"
+  echo "☆ Delete project: todo remove <projectname>"
   echo "☆ Add todo to project: todo add <task> <projectname>"
   echo "☆ List todos in project: todo list <projectname>"
   echo "☆ List todos in all projects: todo listall"
@@ -180,6 +190,8 @@ function divider {
 if [[ "$1" == "create" ]]; then
   # $2 = project name
   createProject "$2"
+elif [[ "$1" == 'remove' ]]; then
+  deleteProject "$2"
 elif [[ "$1" == "add" ]]; then
   # $2 = project name
   # $3 = todo name
