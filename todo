@@ -2,6 +2,7 @@
 
 PROJ_PATH="$HOME/.todos_haj/"
 TODOS_PATH="$HOME/.todos_haj/todos/"
+SETTINGS_PATH="$HOME/.todos_haj/settings/"
 
 function listTodos {
   if [[ -z "$1" ]]; then
@@ -28,12 +29,20 @@ function listTodos {
   fi
 }
 
+function getJiraTag {
+  FILE_NAME=$(basename $FILE | cut -f 1 -d '.')
+  JIRA_TAG=$(tr -s '=' < "$SETTINGS_PATH$FILE_NAME"_settings.txt | cut -d  '=' -f 2)
+  echo "$JIRA_TAG"
+}
+
 function getTodos {
   TODO_AMOUNT=$(wc -l "$1" | awk '{print $1}')
+
   if [[ $TODO_AMOUNT -gt 0 ]]; then
     LINE_NR=1
     while read LINE; do
-      echo "☆ ($LINE_NR) $LINE"
+      JIRA_TAG=$(getJiraTag "$1")
+      echo "☆ ($LINE_NR) $JIRA_TAG - $LINE"
       (( LINE_NR++ ))
     done < "$1"
   else
@@ -52,7 +61,7 @@ function listAllTodos {
     for FILE in "$TODOS_PATH"*.txt; do
       FILE_NAME=$(basename $FILE | cut -f 1 -d '.')
       # if [[ $FILE_NAME != 'test' && $FILE_NAME != 'unlistedProjects' ]]; then
-      if ! grep -q $FILE_NAME "$PROJ_PATH"unlistedProjects.txt; then
+      if ! grep -x $FILE_NAME "$PROJ_PATH"unlistedProjects.txt; then
         # echo "☆☆☆ $FILE_NAME ☆☆☆" | tr a-z A-Z
         center "$FILE_NAME" "~"
         getTodos "$FILE"
@@ -148,8 +157,12 @@ function createProject {
   fi
 
   mkdir -p "$HOME/.todos_haj/todos"
+  mkdir -p "$HOME/.todos_haj/settings"
 
-  (cd "$TODOS_PATH" && touch "$1".txt && touch "$1_settings".txt && echo "$2" >> "$2_settings".txt)
+  # Create file that will contain all todos
+  (cd "$TODOS_PATH" && touch "$1".txt)
+  # Create settings-file (for now only adding jira-tag)
+  (cd "$SETTINGS_PATH" && touch "$1"_settings.txt && echo JIRA_TAG="$2" >> "$1"_settings.txt)
 }
 
 function deleteProject {
@@ -157,7 +170,10 @@ function deleteProject {
     missingParameters
   fi
 
-  (cd "$TODOS_PATH" && find . -type f -name "*$1*" -delete)
+  # TODO: these should match exaclty or there could be problems...
+  # (cd "$TODOS_PATH" && find . -type f -name "*$1*" -delete)
+  echo "Must fix rm command to be safer!!!"
+  # (cd "$SETTINGS_PATH" && find . -type f -name "*$1*" -delete)
   listProjects
 }
 
@@ -168,6 +184,7 @@ function displayInstructions {
   echo "☆ List todos in project: todo list <projectname>"
   echo "☆ List todos in all projects: todo listall"
   echo "☆ List projects: todo projects"
+  echo "☆ Unlist project: todo unlist <project>"
   echo "☆ Delete todo: todo del <projectname> <tasknumber> <tasknumber> etc."
   echo "☆ Clear all todos from projet: todo clearall <projectname>"
 }
@@ -189,7 +206,7 @@ function divider {
 
 if [[ "$1" == "create" ]]; then
   # $2 = project name
-  createProject "$2"
+  createProject "$2" "$3"
 elif [[ "$1" == 'remove' ]]; then
   deleteProject "$2"
 elif [[ "$1" == "add" ]]; then
