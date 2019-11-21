@@ -30,8 +30,8 @@ function listTodos {
 }
 
 function getJiraTag {
-  FILE_NAME=$(basename $FILE | cut -f 1 -d '.')
-  JIRA_TAG=$(tr -s '=' < "$SETTINGS_PATH$FILE_NAME"_settings.txt | cut -d  '=' -f 2)
+  PROJ_NAME=$(basename $FILE | cut -f 1 -d '.')
+  JIRA_TAG=$(sed -n '/^jira_tag/p' "$SETTINGS_PATH$PROJ_NAME"_settings.txt | cut -d '=' -f 2)
   echo "$JIRA_TAG"
 }
 
@@ -42,7 +42,7 @@ function getTodos {
     LINE_NR=1
     while read LINE; do
       JIRA_TAG=$(getJiraTag "$1")
-      echo "☆ ($LINE_NR) $JIRA_TAG - $LINE"
+      echo "☆ ($LINE_NR) ${JIRA_TAG}$LINE"
       (( LINE_NR++ ))
     done < "$1"
   else
@@ -178,8 +178,8 @@ function deleteProject {
 }
 
 function displayInstructions {
-  echo "☆ Create project: todo create <projectname>"
-  echo "☆ Delete project: todo remove <projectname>"
+  echo "☆ Create project: todo create <projectname>  (<jira tag>)"
+  # echo "☆ Delete project: todo remove <projectname>"
   echo "☆ Add todo to project: todo add <task> <projectname>"
   echo "☆ List todos in project: todo list <projectname>"
   echo "☆ List todos in all projects: todo listall"
